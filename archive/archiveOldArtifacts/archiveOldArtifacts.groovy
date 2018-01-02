@@ -75,8 +75,8 @@ import org.artifactory.repo.RepoPathFactory
 executions {
     archive_old_artifacts { params ->
         def filePattern = params['filePattern'] ? params['filePattern'][0] as String : '*'
-        def srcRepo = params['srcRepo'] ? params['srcRepo'][0] as String : 'build-packages'
-        def archiveRepo = params['archiveRepo'] ? params['archiveRepo'][0] as String : 'build-packages-archived'
+        def srcRepo = params['srcRepo'] ? params['srcRepo'][0] as String : ''
+        def archiveRepo = params['archiveRepo'] ? params['archiveRepo'][0] as String : ''
         def lastModifiedDays = params['lastModifiedDays'] ? params['lastModifiedDays'][0] as int : 0
         def lastUpdatedDays = params['lastUpdatedDays'] ? params['lastUpdatedDays'][0] as int : 0
         def createdDays = params['createdDays'] ? params['createdDays'][0] as int : 0
@@ -150,6 +150,13 @@ private archiveOldArtifacts(
     log.info('Archive property: {}', archiveProperty)
     log.info('Number of artifacts to keep per directory: {}', numKeepArtifacts)
 
+    // Require the source and archive repositories to be defined
+    if (archiveRepo == '' || srcRepo == '') {
+        errmsg = "Both srcRepo and archiveRepo must be defined, srcRepo: ${srcRepo}, archiveRepo: ${archiveRepo}"
+        log.error(errmsg)
+        throw new CancelException(errmsg, 400)
+     }    
+
     // Abort if no selection criteria was sent in (we don't want to archive everything blindly)
     if (lastModifiedDays == 0 &&
         lastUpdatedDays == 0 &&
@@ -161,7 +168,7 @@ private archiveOldArtifacts(
         log.error('No selection criteria specified, exiting now!')
         throw new CancelException('No selection criteria specified!', 400)
     }
-
+    
     // Booleans verifying whether or not to archive the artifact
     boolean archiveTiming = true
     boolean archiveExcludeProperties = true
